@@ -1,0 +1,152 @@
+#ifndef _APP_DBA_H_
+#define _APP_DBA_H_
+
+#define APP_STR_SQL_LENGTH 5120
+
+#define APP_MAX_PROG 250
+
+
+//cwd -09-10-24 modify 节目排序按频点从低到高，
+#define JoinSevIdFreq(serviceId, freq) (((freq) << 16) | (serviceId) )
+#define SeparateSevId(sevFreqId) ((unsigned short)(sevFreqId & 0xffff))
+
+
+//#define JoinSevIdFreq(serviceId, freq) (((serviceId) << 16) | (freq) )
+//#define SeparateSevId(sevFreqId) ((unsigned short)(sevFreqId >> 16))
+
+/*
+查询数据库后保存数据
+*/
+struct dbaData_s
+{
+	char **selectResult;//存储查询到的信息
+	int nResult;		//行数
+	int mResult;		//列数
+};
+
+/*
+查询数据的类型
+*/
+typedef enum
+{
+	APP_DATA_TYPE_NUM,		
+	APP_DATA_TYPE_STRING
+}APP_DATA_TYPE_e;
+
+/*
+节目分类表
+*/
+typedef enum
+{
+	SORT_BOUQUET_ID,
+	SORT_BOUQUET_NAME
+}APP_SORT_TABLE_e;
+
+/*
+NIT表
+*/
+typedef enum
+{
+	NIT_FREQ_MHZ,
+	NIT_SYMKBPS,
+	NIT_QAM
+}APP_NIT_TABLE_e;
+
+
+/*
+节目表
+*/
+typedef enum
+{
+	PROGRAM_SERVICE_ID,
+	PROGRAM_INDEX,
+	PROGRAM_CHN_NAME,
+	PROGRAM_CA,
+	PROGRAM_LOCK,
+	PROGRAM_FAV,
+	PROGRAM_DEL,
+	PROGRAM_SKIP,
+	PROGRAM_MOV,
+	PROGRAM_TRACK ,
+	PROGRAM_AUDIO_OFFSET,
+	PROGRAM_FREQ,
+	PROGRAM_QAM,
+	PROGRAM_SYMKBPS,
+	PROGRAM_TYPE,
+	PROGRAM_VIDEO_PID,
+	PROGRAM_AUDIO_PID,
+	PROGRAM_PCRPID,
+	PROGRAM_ECMPID,
+	PROGRAM_AUDIO_ECMPID,
+	PROGRAM_VIDEO_ECMPID,
+	PROGRAM_SCAT_SYS_ID,
+	PROGRAM_TSID, 
+	PROGRAM_SORT_ID,
+	PROGRAM_PID,
+	PROGRAM_ORI_NET_ID,
+	PROGRAM_VIDEO_TYPE,
+	PROGRAM_AUDIO_TYPE,
+	PROGRAM_AUDIO_VOLUME,
+}APP_PROGRAM_TABLE_e;
+
+
+typedef enum
+{
+	BROADCAST_SERVICE_ID,
+	BROADCAST_INDEX,
+	BROADCAST_CHN_NAME,
+	BROADCAST_TRACK ,
+	BROADCAST_FREQ,
+	BROADCAST_QAM,
+	BROADCAST_SYMKBPS,
+	BROADCAST_TYPE,
+	BROADCAST_VIDEO_PID,
+	BROADCAST_AUDIO_PID,
+	BROADCAST_PCRPID,
+	BROADCAST_TSID, 
+	BROADCAST_PID,
+	BROADCAST_ORI_NET_ID
+}APP_BROADCAST_TABLE_e;
+/*
+预约表
+*/
+typedef enum
+{
+	EVENTRESERVED_SERVICE_ID,
+	EVENTRESERVED_CHN_NAME,
+	EVENTRESERVED_WEEK,
+	EVENTRESERVED_EVENT_ID,
+	EVENTRESERVED_SHOW_DETAIL_STATE,
+	EVENTRESERVED_DETAIL_INFO,
+	EVENTRESERVED_EPG_INFO,
+	EVENTRESERVED_RESERVE_STATE,
+	EVENTRESERVED_START_HOUR,
+	EVENTRESERVED_START_MIN,
+	EVENTRESERVED_END_HOUR,
+	EVENTRESERVED_END_MIN, 
+	EVENTRESERVED_DAY,
+	EVENTRESERVED_STYLE
+}APP_EVENTRESERVED_TABLE_e;
+
+
+
+void SQL_API_Semaphore_Wait(void);
+void SQL_API_Semaphore_Release(void);
+void SQL_API_Select(BS08 * sql);
+BU08 SQL_API_Exec(BS08 * strSQL);
+BU32 SQL_API_GetTotalNum(void);
+void SQL_API_QueryNext(void);
+void SQL_API_GotoRow(BU32 nRow);
+BU08 SQL_API_Eof(void);
+BU32 SQL_API_GetData(BU32 index,BU08 *data, BU32 dataSize, APP_DATA_TYPE_e dataType);
+void SQL_API_SaveToFlash(const char * fileName);
+#endif
+
+
+
+
+
+
+
+
+

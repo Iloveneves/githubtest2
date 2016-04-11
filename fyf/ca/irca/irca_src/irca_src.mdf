@@ -1,0 +1,12 @@
+// this MDF template file is created by MdfEditor.
+
+ScriptVersion = 1.0;
+
+module IRCA_SRC
+{
+    version = 1.0;
+    submodules = {};
+    codefiles = {"irca_sc.c","irca_os.c","irca_desc.c","irca_os.c","irca_storage.c","irca_timer.c","irca_dmux.c","irca_loader.c","irca_virtual_driver.c","irca_si.c","irca_sys.c","irca_status.c","s3_ansi_functions.c"};
+    docfiles = {};
+    rules = {};
+};

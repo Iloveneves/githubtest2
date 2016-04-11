@@ -1,0 +1,61 @@
+tpversion = longyan
+objs := $(tpversion)/osd/gui_bmplib.o \
+	$(tpversion)/osd/gui_event_table.o \
+	$(tpversion)/osd/gui_focus_table.o \
+	$(tpversion)/osd/gui_fontlib.o \
+	$(tpversion)/osd/gui_maintask.o \
+	$(tpversion)/osd/gui_osd_init.o \
+	$(tpversion)/osd/gui_state_table.o \
+	$(tpversion)/osd/gui_string_table.o \
+	$(tpversion)/osd/gui_style_data.o \
+	$(tpversion)/osd/gui_osd_table.o \
+	$(tpversion)/osd/Logo_nosinal.o \
+	$(tpversion)/osd/Logo_radio.o \
+	$(tpversion)/event/ui_app_arealock.o \
+	$(tpversion)/event/ui_app_ca_card.o \
+	$(tpversion)/event/ui_app_ca_osd.o \
+	$(tpversion)/event/ui_app_chn_edit.o \
+	$(tpversion)/event/ui_app_chn_list.o \
+	$(tpversion)/event/ui_app_chn_sort.o \
+	$(tpversion)/event/ui_app_epg.o \
+	$(tpversion)/event/ui_app_factory_set.o \
+	$(tpversion)/event/ui_app_full_screen.o \
+	$(tpversion)/event/ui_app_lock.o \
+	$(tpversion)/event/ui_app_mainmenu.o \
+	$(tpversion)/event/ui_app_prog_state.o \
+	$(tpversion)/event/ui_app_reserve.o \
+	$(tpversion)/event/ui_app_search.o \
+	$(tpversion)/event/ui_app_signal_detect.o \
+	$(tpversion)/event/ui_app_sys_set.o \
+	$(tpversion)/event/ui_app_urgentBrct.o \
+	$(tpversion)/event/games/ui_app_game_box.o \
+	$(tpversion)/event/games/ui_app_game_landmine.o \
+	$(tpversion)/event/games/ui_app_game_russia.o \
+	$(tpversion)/event/games/ui_app_game_snake.o
+
+SLIB=$(tpversion)/libtpversion.a
+DLIB=$(tpversion)/libtpversion.so
+
+ifndef HI_CFLAGS
+HI_CFLAGS= -Wall -O2 -march=armv5te -ggdb
+#HI_CFLAGS= -Wall -static -march=armv5te -g -DHFP
+endif
+
+target= $(SLIB) $(DLIB)
+
+all: $(target)
+
+$(DLIB): ${objs}
+	$(CC) -shared -o $@ $(objs)
+
+$(SLIB): ${objs}
+	$(AR)  -rc -o $@ $(objs)
+
+%.o : %.c
+	$(CC) $(HI_CFLAGS) -c -fPIC -o "$@" "$<" $(CFG_INC)
+
+clean:
+	@rm -f $(tpversion)/event/*.o
+	@rm -f $(tpversion)/osd/*.o
+	@rm -f $(tpversion)/event/games/*.o
+	rm -f $(target)

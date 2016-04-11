@@ -1,0 +1,333 @@
+/*******************************************************************************
+ *             Copyright 2004 - 2050, Hisilicon Tech. Co., Ltd.
+ *                           ALL RIGHTS RESERVED
+ * FileName: appmngsvr.c
+ * Description:
+ *
+ * History:
+ * Version   Date         Author     DefectNum    Description
+ * main1     2008-09-01   diaoqiangwei/d60770
+ ******************************************************************************/
+
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+#include "mtd-user.h"
+#include "hi_flashgal.h"
+
+#define     DBGPRINT    printf
+//#define     DBGPRINT(fmt...)
+
+#define MUTEX_ENTER
+#define MUTEX_LEAVAL
+
+
+static HI_S32 open_mtd(HI_S32 id, HI_S32 flags, HI_S32 block)
+{
+	HI_S32 fd;
+	char name[32] = {0};
+
+	//MTDBLOCK
+	if (block == 1)
+	{
+		sprintf(name, "/dev/mtd%s/%c", "block", (char)id + '0');
+	}
+	else
+	{
+		sprintf(name, "/dev/mtd/%d",  id);
+	}
+
+	//MTDTRY
+	//sprintf(name, "/dev/mtd/%d",  id);
+	fd = open(name, flags);
+	return fd;
+}
+
+static HI_S32 get_flash_info(HI_S32 fd, struct mtd_info_user *miu)
+{
+
+	memset(miu, 0, sizeof(*miu));
+	if (ioctl(fd, MEMGETINFO, miu)!=0)
+	{
+		perror(" get_flash_info  error [MEMGETINFO]:");
+		return HI_FAILURE;
+	}
+
+	return HI_SUCCESS;
+}
+
+HI_S32 hi_flash_get_size(HI_FLASH_S* dev)
+{
+	struct mtd_info_user miu;
+	get_flash_info(dev->fd, &miu);
+	return miu.size;
+
+}
+
+static HI_S32 region_erase(HI_S32 fd, HI_S32 start, HI_S32 count, HI_S32 unlock, HI_S32 regcount)
+{
+	HI_S32 i, j;
+	region_info_t * reginfo;
+
+	reginfo = malloc(regcount * sizeof(region_info_t));
+
+	for (i = 0; i < regcount; i++)
+	{
+		reginfo[i].regionindex = i;
+		if (ioctl(fd,MEMGETREGIONINFO,&(reginfo[i])) != 0)
+		{
+			free(reginfo);
+			return HI_FAILURE;
+		}
+		else
+			DBGPRINT("Region %d is at %d of %d sector and with sector "
+			         "size %x\n", i, reginfo[i].offset, reginfo[i].numblocks,
+			         reginfo[i].erasesize);
+	}
+
+	// We have all the information about the chip we need.
+
+	for (i = 0; i < regcount; i++)
+	{ //Loop through the regions
+		region_info_t * r = &(reginfo[i]);
+
+		if ((start >= reginfo[i].offset) &&
+		        (start < (r->offset + r->numblocks*r->erasesize)))
+			break;
+	}
+
+	if (i >= regcount)
+	{
+		DBGPRINT("Starting offset %x not within chip.\n", start);
+		free(reginfo);
+		return HI_FAILURE;
+	}
+
+	//We are now positioned within region i of the chip, so start erasing
+	//count sectors from there.
+
+	for (j = 0; (j < count)&&(i < regcount); j++)
+	{
+		erase_info_t erase;
+		region_info_t * r = &(reginfo[i]);
+
+		erase.start = start;
+		erase.length = r->erasesize;
+
+		if (unlock != 0)
+		{ //Unlock the sector first.
+			if (ioctl(fd, MEMUNLOCK, &erase) != 0)
+			{
+				perror("\nMTD Unlock failure");
+				free(reginfo);
+				//close(fd);
+				return HI_FAILURE;
+			}
+		}
+		DBGPRINT("\rPerforming Flash Erase of length %u at offset 0x%x\n",
+		         erase.length, erase.start);
+		if (ioctl(fd, MEMERASE, &erase) != 0)
+		{
+			perror("\nMTD Erase failure");
+			free(reginfo);
+			//close(fd);
+			return HI_FAILURE;
+		}
+
+		start += erase.length;
+		if (start >= (r->offset + r->numblocks*r->erasesize))
+		{ //We finished region i so move to region i+1
+			DBGPRINT("\nMoving to region %d\n", i+1);
+			i++;
+		}
+	}
+	free(reginfo);
+	DBGPRINT(" done\n");
+
+	return HI_SUCCESS;
+}
+
+static HI_S32 non_region_erase(HI_S32 fd, HI_S32 start, HI_S32 count, HI_S32 unlock)
+{
+	mtd_info_t meminfo;
+
+	DBGPRINT("on_region_erase\n");
+
+	if (ioctl(fd,MEMGETINFO,&meminfo) == 0)
+	{
+		erase_info_t erase;
+
+		erase.start = start;
+		erase.length = meminfo.erasesize;
+
+		for (; count > 0; count--)
+		{
+			DBGPRINT("\rPerforming Flash Erase of length %u at offset 0x%x\n",
+			         erase.length, erase.start);
+
+			if (unlock != 0)
+			{
+				//Unlock the sector first.
+				DBGPRINT("\rPerforming Flash unlock at offset 0x%x",erase.start);
+				if (ioctl(fd, MEMUNLOCK, &erase) != 0)
+				{
+					perror("\nMTD Unlock failure");
+					//close(fd);
+					return HI_FAILURE;
+				}
+			}
+
+			if (ioctl(fd,MEMERASE,&erase) != 0)
+			{
+
+				perror("\nMTD Erase failure");
+				//close(fd);
+				return HI_FAILURE;
+			}
+			erase.start += meminfo.erasesize;
+		}
+		DBGPRINT(" done\n");
+	}
+	return HI_SUCCESS;
+}
+
+static HI_S32 do_flash_erase(HI_S32 fd,  HI_U32 start, HI_S32 blockcount, HI_S32 unlock)
+{
+	HI_S32 regcount;
+	HI_S32 res = 0;
+
+
+	if (fd <0)
+	{
+		DBGPRINT("\nopen mtd fail %d", fd);
+		return 0;
+	}
+
+	if (ioctl(fd,MEMGETREGIONCOUNT,&regcount) == 0)
+	{
+		DBGPRINT("regcount %d\n", regcount);
+
+		if (regcount == 0)
+		{
+			res = non_region_erase(fd, start, blockcount, unlock);
+		}
+		else
+		{
+			res = region_erase(fd, start, blockcount, unlock, regcount);
+		}
+	}
+	else
+	{
+		DBGPRINT("\nioctl fail");
+		return HI_FAILURE;
+	}
+
+	return res;
+}
+
+HI_S32 hi_flash_open(HI_FLASH_S *dev)
+{
+	HI_S32 fd;
+
+	//MTD
+	//fd = open_mtd(dev->mtd_id, O_RDWR|O_SYNC, 0);
+
+	//MTDBLOCK
+	fd = open_mtd(dev->mtd_id, O_RDWR|O_SYNC, 0);
+
+	if (fd < 0)
+	{
+		DBGPRINT("flash_open fail %d\n", fd);
+		return HI_FAILURE;
+	}
+
+	dev->fd = fd;
+
+	return HI_SUCCESS;
+}
+
+
+HI_S32 hi_flash_close(HI_FLASH_S *dev)
+{
+	HI_S32 ret;
+	HI_S32 fd = dev->fd;
+
+	ret = close(fd);
+
+	dev->fd = 0;
+
+	return ret;
+}
+
+HI_S32 hi_flash_lseek(HI_FLASH_S *dev, HI_S32 offset, HI_S32 origin)
+{
+	HI_S32 fd = dev->fd;
+	HI_S32 new_addr = 0;
+
+	new_addr = lseek(fd, offset, origin);
+
+	return new_addr;
+}
+
+HI_S32 hi_flash_erase_all(HI_FLASH_S *dev)
+{
+	struct mtd_info_user miu;
+	HI_S32 ret = 0;
+
+	if (get_flash_info(dev->fd, &miu))
+		return HI_FAILURE;
+
+	assert(!(miu.size%miu.erasesize));
+	ret = do_flash_erase(dev->fd, 0,  miu.size/miu.erasesize, 0);
+	return ret;
+}
+
+HI_S32 hi_flash_erase(HI_FLASH_S *dev,  HI_U32 startblockno,  HI_U32 blockcount)
+{
+	struct mtd_info_user miu;
+	HI_U32  totalnum;
+#if 1
+	if (get_flash_info(dev->fd, &miu))
+	{
+		return HI_FAILURE;
+	}
+#endif
+	//miu.size = miu.erasesize = 1024 * 128;
+	totalnum = miu.size / miu.erasesize;
+	if (startblockno >= totalnum)
+	{
+		return HI_FAILURE;
+	}
+
+	if  (blockcount + startblockno >  totalnum)
+	{
+		blockcount = totalnum - startblockno;
+	}
+
+	return  do_flash_erase(dev->fd,  startblockno*miu.erasesize,  blockcount, 0);
+}
+
+
+HI_S32 hi_flash_write(HI_FLASH_S *dev, HI_U8 *data, HI_S32 len)
+{
+	HI_S32 ret = 0;
+	HI_S32 fd = dev->fd;
+
+	ret = write(fd, data, len);
+	return ret;
+}
+
+HI_S32 hi_flash_read(HI_FLASH_S *dev, HI_U8 *data, HI_S32 len)
+{
+	HI_S32 ret = 0;
+	HI_S32 fd = dev->fd;
+
+	ret = read(fd, data, len);
+	return ret;
+}

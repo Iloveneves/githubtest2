@@ -1,0 +1,12 @@
+// this MDF template file is created by MdfEditor.
+
+ScriptVersion = 1.0;
+
+module LIB_CAS
+{
+	version = 1.0;
+	submodules = {"irca_src/irca_src.mdf", "irca_ect/irca_ect.mdf"};
+	codefiles = {};
+	docfiles = {};
+	rules = {};
+};

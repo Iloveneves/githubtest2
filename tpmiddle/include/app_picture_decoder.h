@@ -1,0 +1,41 @@
+#ifndef _H_APP_PICTURE_DECODER_H
+#define _H_APP_PICTURE_DECODER_H
+
+#define MAX_PICTURE_NUM (1024)
+
+typedef enum
+{
+	APP_PICTURE_SECONDS_3S_e = 0,
+	APP_PICTURE_SECONDS_5S_e,
+	APP_PICTURE_SECONDS_8S_e,
+	APP_PICTURE_SECONDS_10S_e
+}APP_PICTURE_SECONDS_TYPE_E;
+
+typedef enum
+{
+	APP_PICTURE_SHOW_ORDER_e = 0,
+	APP_PICTURE_SHOW_RANDOM_e 	
+}APP_PICTURE_SHOW_TYPE_E;
+
+typedef struct _Picture_Group_S
+{
+	BU32 PicFileNum;
+	APP_File_Info_S PictureInfo[MAX_PICTURE_NUM];
+
+}Picture_Group_S;
+
+#define FRAME_WIDTH 441
+#define FRAME_HEIGHT 330
+#endif
+
+
+
+
+
+
+
+
+
+
+
+

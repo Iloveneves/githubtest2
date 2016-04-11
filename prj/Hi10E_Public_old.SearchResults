@@ -1,0 +1,5 @@
+---- MainTask Matches (4 in 2 files) ----
+Fyf_gui_main.c (e:\hisi\hi3110e_public\fyf\dev):void MainTask();
+Fyf_gui_main.c (e:\hisi\hi3110e_public\fyf\dev)://	taskid = FYF_API_thread_create("GUI", (void *)&MainTask, FYF_NULL, FYF_THREAD_PRIORITY_MAINGUI, FYF_THREAD_STACK_MAINGUI);	
+Fyf_gui_main.c (e:\hisi\hi3110e_public\fyf\dev):	MainTask();
+Gui_maintask.c (e:\hisi\hi3110e_public\tpversion\ui_demo\osd):void MainTask(void *pvParam)

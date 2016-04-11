@@ -1,0 +1,13 @@
+// this MDF template file is created by MdfEditor.
+
+ScriptVersion = 1.0;
+
+module IRCA_ECT
+{
+    version = 1.0;
+    submodules = {};
+    codefiles = {"ca_dmbsvcinfo.c","ca_error.c","ca_hgpc.c","ca_ippv.c","ca_lppv.c","ca_mail.c","ca_monitor.c",
+    			"ca_ppt.c","ca_product.c","ca_rf.c","ca_scard.c","ca_surflock.c","ca_svcinfo.c","ca_task.c","ird_msg.c"};
+    docfiles = {};
+    rules = {};
+};
